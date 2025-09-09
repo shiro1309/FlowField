@@ -35,7 +35,6 @@ int main(void)
     int row = 0;
     int *rowPtr = &row;
 
-
     float FlowGrid[screenWidth/flowResolution][screenHeight/flowResolution];
     for(int column = 0; column < screenWidth/flowResolution; column++) {
         for(int row = 0; row < screenHeight/flowResolution; row++) {
@@ -90,15 +89,6 @@ int main(void)
             Particles[i].x += speed * cos(angle);
             Particles[i].y += speed * sin(angle);
         }
-        
-        /*
-        int column = Particle.x/flowResolution;
-        int row = Particle.y/flowResolution;
-        float angle = FlowGrid[column][row];
-        printf("%f\n", angle);
-        Particle.x += speed * cos(angle);
-        Particle.y += speed * sin(angle);
-        */
         
         // Draw
         //----------------------------------------------------------------------------------
