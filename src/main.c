@@ -4,6 +4,12 @@
 #include "math.h"
 #include "stdlib.h"
 
+#if defined(PLATFORM_DESKTOP)
+    #define GLSL_VERSION            330
+#else   // PLATFORM_ANDROID, PLATFORM_WEB
+    #define GLSL_VERSION            100
+#endif
+
 int getParticlePos(int max);
 
 struct particle {
@@ -21,10 +27,15 @@ int main(void)
     // Initialization
     const int screenWidth  = 1600;
     const int screenHeight = 800;
-    const int particleAmount = 1000;
+    Vector2 resolution = {screenWidth, screenHeight};
+
+    const int particleAmount = 10000;
     const int flowResolution = 10;
     const float alpha = 0.05; // rate of change for the vectors
     const float speed = 1.1;
+
+    char fpsString[20];
+    float fps = 0.0f;
 
     float angle = 0.0f;
     float *anglePtr = &angle;
@@ -34,6 +45,7 @@ int main(void)
 
     int row = 0;
     int *rowPtr = &row;
+
 
     float FlowGrid[screenWidth/flowResolution][screenHeight/flowResolution];
     for(int column = 0; column < screenWidth/flowResolution; column++) {
@@ -64,40 +76,80 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raylib Flow field");
 
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
+    //--------------------------------------------------------------------------------------
+    // all raylib init and window creation is done here
+    //--------------------------------------------------------------------------------------
+    /*
+    Shader shader = LoadShader(NULL, "../assets/shaders/perlin.fs");
+    if (shader.id == 0) {
+        printf("Failed to load shader!\n");
+        return 1;
+    }
+    
+    int timeLoc = GetShaderLocation(shader, "uTime");
+    int resLoc  = GetShaderLocation(shader, "uResolution");
+    float Start_time = 0.0f;
+    */
+
+    //SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         // update the particle for the new information
+
+        fps = GetFPS();
+        snprintf(fpsString, sizeof(fpsString), "FPS: %.2f", fps);
         
+        // shaders
+        /*
+        Start_time = GetFrameTime();
+        SetShaderValue(shader, timeLoc, &Start_time, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(shader, resLoc, &resolution, SHADER_UNIFORM_VEC2);
+        */
+
+
         for(int i = 0; i< particleAmount; i++) {
             *columnPtr = (int)(Particles[i].x/flowResolution);
             *rowPtr = (int)(Particles[i].y/flowResolution);
-            
-            if (column > screenWidth/flowResolution-1 || column < 1){
-                continue;
-            }
-            if (row > screenHeight/flowResolution-1 || row < 1) {
-                continue;
-            }
-            
 
-            *anglePtr = FlowGrid[column][row];
+           *anglePtr = FlowGrid[column][row];
 
             Particles[i].x += speed * cos(angle);
+            if(Particles[i].x > screenWidth) {
+                Particles[i].x = 1;
+            }
+            if(Particles[i].x < 1) {
+                Particles[i].x = screenWidth-1;
+            }
+
             Particles[i].y += speed * sin(angle);
+            if(Particles[i].y > screenHeight) {
+                Particles[i].y = 1;
+            }
+            if(Particles[i].y < 1){
+                Particles[0].y = screenHeight - 1;
+            }
         }
         
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-            ClearBackground(RAYWHITE);
+            
+        ClearBackground(RAYWHITE);
+            for(int i = 0; i < particleAmount; i++) {
+                //DrawPixel(Particles[i].x, Particles[i].y, BLACK);
+                DrawRectangle(Particles[i].x, Particles[i].y, 3, 3, BLACK);
+                //DrawCircle(Particles[i].x, Particles[i].y, 2, BLACK);
+            }
+
+            DrawText(fpsString, 5, 5, 20, DARKGRAY);
             
             
             
+            /*
             for(int column = 0; column < screenWidth/flowResolution; column++) {
                 for(int row = 0; row < screenHeight/flowResolution; row++) {
                     *anglePtr = FlowGrid[column][row];
@@ -106,20 +158,19 @@ int main(void)
                     DrawLine(column*flowResolution, row*flowResolution, column*flowResolution + 10 * cos(angle), row*flowResolution + 10 * sin(angle), BLACK);
                 }
             }
+            */
             
-            for(int i = 0; i < particleAmount; i++) {
-                
-                DrawCircle(Particles[i].x, Particles[i].y, 3, BLACK);
-            }
-
+            
+            /*
             DrawRectangle(0, 0, 20, screenHeight, BLACK);
             DrawRectangle(0, 0 , screenWidth, 20, BLACK);
             DrawRectangle(0, screenHeight-20, screenWidth, 20, BLACK);
             DrawRectangle(screenWidth-20, 0, 20, screenHeight, BLACK);
-
+            */
+            
             //DrawCircle(Particle.x, Particle.y, 6, RED);
 
-            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+            
 
         EndDrawing();
         //----------------------------------------------------------------------------------
