@@ -11,11 +11,12 @@
 #endif
 
 int getParticlePos(int max);
+float float_map(int *input, float Imin, float Imax, float min, float max, float *pointer);
 
 struct particle {
     double x; // position x
     double y; // position y
-    Vector2 trail[20]; // vector trail vill be sett to the position and pased down
+    //Vector2 trail[20]; // vector trail vill be sett to the position and pased down
 } particle;
 
 //------------------------------------------------------------------------------------
@@ -29,10 +30,21 @@ int main(void)
     const int screenHeight = 800;
     Vector2 resolution = {screenWidth, screenHeight};
 
-    const int particleAmount = 10000;
+    const int particleAmount = 5000;
     const int flowResolution = 10;
     const float alpha = 0.05; // rate of change for the vectors
     const float speed = 1.1;
+
+    int perlin_x_offset = 0;
+    int perlin_y_offset = 0;
+
+    Color perlin_color = {0,0,0,0};
+    Color *perlin_colorptr = &perlin_color;
+    int perlinGray = 0;
+    int *PerlinGrayPtr = &perlinGray;
+
+    float temp_float = 0.0f;
+    float *tempPtr = &temp_float;
 
     char fpsString[20];
     float fps = 0.0f;
@@ -46,18 +58,27 @@ int main(void)
     int row = 0;
     int *rowPtr = &row;
 
+    InitWindow(screenWidth, screenHeight, "raylib Flow field");
+
+    Image perlinNoiseMap = GenImagePerlinNoise(screenWidth/flowResolution, screenHeight/flowResolution, perlin_x_offset, perlin_y_offset, 4.0f);
 
     float FlowGrid[screenWidth/flowResolution][screenHeight/flowResolution];
     for(int column = 0; column < screenWidth/flowResolution; column++) {
         for(int row = 0; row < screenHeight/flowResolution; row++) {
-            *anglePtr = (row / (float)(screenHeight/flowResolution) * PI);
+            
+            *perlin_colorptr = GetImageColor(perlinNoiseMap, column, row);
+            *PerlinGrayPtr = (perlin_color.r + perlin_color.g + perlin_color.b) / 3;
+            *anglePtr = float_map(&perlinGray, 0, 255, 0, PI*2, &temp_float);
+            
+           //*anglePtr = (column / (float)(screenHeight/flowResolution) * PI) * (row / (float)(screenWidth/flowResolution) * PI);
+           //printf("%f\n", angle);
             FlowGrid[column][row] = angle;
         }
     }
 
     struct particle Particles[particleAmount];
     
-    srand(time(0));
+    //srand(time(0));
     
     for(int i = 0; i < particleAmount; i++){
         Particles[i].x = getParticlePos(screenWidth);
@@ -74,7 +95,7 @@ int main(void)
     
     //--------------------------------------------------------------------------------------
 
-    InitWindow(screenWidth, screenHeight, "raylib Flow field");
+    
 
     //--------------------------------------------------------------------------------------
     // all raylib init and window creation is done here
@@ -85,11 +106,16 @@ int main(void)
         printf("Failed to load shader!\n");
         return 1;
     }
+    else {
+        printf("Loaded shader into memory");
+    }
+    
     
     int timeLoc = GetShaderLocation(shader, "uTime");
     int resLoc  = GetShaderLocation(shader, "uResolution");
     float Start_time = 0.0f;
     */
+    
 
     //SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -101,21 +127,20 @@ int main(void)
 
         fps = GetFPS();
         snprintf(fpsString, sizeof(fpsString), "FPS: %.2f", fps);
+
+        //perlinNoiseMap = GenImagePerlinNoise(screenWidth/flowResolution, screenHeight/flowResolution, perlin_x_offset, perlin_y_offset, 4.0f);
         
-        // shaders
-        /*
-        Start_time = GetFrameTime();
-        SetShaderValue(shader, timeLoc, &Start_time, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(shader, resLoc, &resolution, SHADER_UNIFORM_VEC2);
-        */
 
 
         for(int i = 0; i< particleAmount; i++) {
             *columnPtr = (int)(Particles[i].x/flowResolution);
             *rowPtr = (int)(Particles[i].y/flowResolution);
 
-           *anglePtr = FlowGrid[column][row];
-
+            *anglePtr = FlowGrid[column][row];
+            //*perlin_colorptr = GetImageColor(perlinNoiseMap, column, row);
+            //*anglePtr = (perlin_color.r + perlin_color.g + perlin_color.b) / 3;
+            //*anglePtr = float_map(&perlinGray, 0, 255, 0, PI*2, &temp_float);
+            
             Particles[i].x += speed * cos(angle);
             if(Particles[i].x > screenWidth) {
                 Particles[i].x = 1;
@@ -160,15 +185,6 @@ int main(void)
             }
             */
             
-            
-            /*
-            DrawRectangle(0, 0, 20, screenHeight, BLACK);
-            DrawRectangle(0, 0 , screenWidth, 20, BLACK);
-            DrawRectangle(0, screenHeight-20, screenWidth, 20, BLACK);
-            DrawRectangle(screenWidth-20, 0, 20, screenHeight, BLACK);
-            */
-            
-            //DrawCircle(Particle.x, Particle.y, 6, RED);
 
             
 
@@ -186,4 +202,11 @@ int main(void)
 
 int getParticlePos(int max) {
     return rand() % (max + 1);
+}
+
+float float_map(int *input, float Imin, float Imax, float min, float max, float *pointer) {
+    
+    *pointer = (*input - Imin) / (Imax- Imin);
+
+    return min + *pointer * (max - min);
 }
